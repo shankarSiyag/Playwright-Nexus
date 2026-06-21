@@ -2,7 +2,6 @@
 node_modules/
 
 # Environment files (real secrets) - .env.example IS committed
-env/prod.env
 !env/.env.example
 
 # Auth storage states (per-environment session cookies/tokens)
