@@ -1,0 +1,35 @@
+{
+  "name": "playwright-multi-env-framework",
+  "version": "1.0.0",
+  "description": "Playwright framework with multi-environment config, separate API & UI projects, and reusable login state",
+  "scripts": {
+    "test:dev": "cross-env ENV=dev playwright test",
+    "test:stag": "cross-env ENV=stag playwright test",
+    "test:prod": "cross-env ENV=prod playwright test",
+    "test:api": "cross-env ENV=stag playwright test --project=api",
+    "test:api:dev": "cross-env ENV=dev playwright test --project=api",
+    "test:api:prod": "cross-env ENV=prod playwright test --project=api",
+    "test:ui": "cross-env ENV=stag playwright test --project=ui-chromium",
+    "test:ui:dev": "cross-env ENV=dev playwright test --project=ui-chromium",
+    "test:ui:prod": "cross-env ENV=prod playwright test --project=ui-chromium",
+    "test:ui:all-browsers": "cross-env ENV=stag playwright test --project=ui-chromium --project=ui-firefox --project=ui-webkit",
+    "test:headed": "cross-env ENV=stag playwright test --project=ui-chromium --headed",
+    "test:debug": "cross-env ENV=stag playwright test --debug",
+    "codegen": "cross-env ENV=stag playwright codegen",
+    "report": "playwright show-report",
+    "install:browsers": "playwright install --with-deps",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write \"**/*.ts\""
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^22.10.0",
+    "cross-env": "^7.0.3",
+    "dotenv": "^16.4.5",
+    "eslint": "^9.16.0",
+    "prettier": "^3.4.1",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.61.1"
+  }
+}

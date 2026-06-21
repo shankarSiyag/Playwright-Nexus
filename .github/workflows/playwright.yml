@@ -1,0 +1,68 @@
+name: Playwright Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to run against'
+        required: true
+        default: 'stag'
+        type: choice
+        options: [dev, stag, prod]
+
+jobs:
+  test:
+    name: Test (${{ matrix.env }})
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # On manual dispatch, run only the chosen env. On push/PR, run dev + stag (skip prod).
+        env: ${{ github.event_name == 'workflow_dispatch' && fromJSON(format('["{0}"]', github.event.inputs.environment)) || fromJSON('["dev", "stag"]') }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Create env file from CI secrets (prod only)
+        if: matrix.env == 'prod'
+        run: |
+          echo "PROD_USER_PASSWORD=${{ secrets.PROD_USER_PASSWORD }}" >> $GITHUB_ENV
+          echo "PROD_API_KEY=${{ secrets.PROD_API_KEY }}" >> $GITHUB_ENV
+
+      - name: Run tests
+        env:
+          ENV: ${{ matrix.env }}
+          CI: true
+        run: npx playwright test
+
+      - name: Upload HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.env }}
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Upload test results (traces/videos on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.env }}
+          path: test-results/
+          retention-days: 14

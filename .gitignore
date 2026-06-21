@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Environment files (real secrets) - .env.example IS committed
+env/*.env
+!env/.env.example
+
+# Auth storage states (per-environment session cookies/tokens)
+auth/*.json
+!auth/.gitkeep
+
+# Playwright artifacts
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
+# Build output
+dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
