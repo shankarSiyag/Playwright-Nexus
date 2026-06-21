@@ -59,7 +59,6 @@ export default defineConfig({
       testIgnore: [/.*\.setup\.ts/, /.*\.unauth\.spec\.ts/],
       dependencies: ['setup'],
       use: {
-        headless: false,
         ...devices['Desktop Chrome'],
         baseURL: envConfig.baseURL,
         storageState: path.resolve(__dirname, `auth/${envConfig.env}.json`),
