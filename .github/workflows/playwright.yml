@@ -1,10 +1,12 @@
-name: Playwright Tests
+name: Playwright Pipeline with multiple workflow dispatch
 
 on:
   push:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  schedule:
+    - cron: '0 2 * * *'
   workflow_dispatch:
     inputs:
       environment:
@@ -14,15 +16,56 @@ on:
         type: choice
         options: [dev, stag, prod]
 
+      shards:
+        description: 'Shard to run (e.g. 1/1, 1/4, 2/4)'
+        required: false
+        default: '1/1'
+        type: string
+
+      workers:
+        description: 'Number of parallel workers'
+        required: false
+        default: '1'
+
+      grep:
+        description: 'Test filter (grep/tag, e.g. @smoke or title regex)'
+        required: false
+        default: ''
+
+      project:
+        description: 'Playwright project/browser to run'
+        required: false
+        default: 'chromium'
+        type: choice
+        options: [chromium, firefox, webkit, all]
+
+      retries:
+        description: 'Number of retries for flaky tests'
+        required: false
+        default: '0'
+
+      headed:
+        description: 'Run tests in headed mode (visible browser)'
+        required: false
+        default: false
+        type: boolean
+
+      debug:
+        description: 'Enable Playwright debug mode'
+        required: false
+        default: false
+        type: boolean
+
 jobs:
   test:
     name: Test (${{ matrix.env }})
-    timeout-minutes: 30
+    timeout-minutes: 60
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        # On manual dispatch, run only the chosen env. On push/PR, run dev + stag (skip prod).
+        # On manual dispatch → run only selected environment
+        # On push/PR → run dev + stag
         env: ${{ github.event_name == 'workflow_dispatch' && fromJSON(format('["{0}"]', github.event.inputs.environment)) || fromJSON('["dev", "stag"]') }}
 
     steps:
@@ -31,7 +74,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
@@ -45,11 +88,20 @@ jobs:
           echo "PROD_USER_PASSWORD=${{ secrets.PROD_USER_PASSWORD }}" >> $GITHUB_ENV
           echo "PROD_API_KEY=${{ secrets.PROD_API_KEY }}" >> $GITHUB_ENV
 
-      - name: Run tests
+      - name: Run Playwright tests
         env:
           ENV: ${{ matrix.env }}
           CI: true
-        run: npx playwright test
+        run: |
+          npx playwright test \
+            ${{ github.event.inputs.grep != '' && format('--grep="{0}"', github.event.inputs.grep) || '' }} \
+            ${{ github.event.inputs.project != 'all' && format('--project={0}', github.event.inputs.project) || '' }} \
+            ${{ github.event.inputs.headed == 'true' && '--headed' || '' }} \
+            ${{ github.event.inputs.debug == 'true' && '--debug' || '' }} \
+            --workers=${{ github.event.inputs.workers || 1 }} \
+            --retries=${{ github.event.inputs.retries || 0 }} \
+            --shard=${{ github.event.inputs.shards || '1/1' }}
+        shell: bash
 
       - name: Upload HTML report
         if: always()
